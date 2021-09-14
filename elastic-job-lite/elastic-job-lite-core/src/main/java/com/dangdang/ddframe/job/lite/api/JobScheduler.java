@@ -29,12 +29,7 @@ import com.dangdang.ddframe.job.lite.api.listener.ElasticJobListener;
 import com.dangdang.ddframe.job.lite.api.strategy.JobInstance;
 import com.dangdang.ddframe.job.lite.config.LiteJobConfiguration;
 import com.dangdang.ddframe.job.lite.internal.guarantee.GuaranteeService;
-import com.dangdang.ddframe.job.lite.internal.schedule.JobRegistry;
-import com.dangdang.ddframe.job.lite.internal.schedule.JobScheduleController;
-import com.dangdang.ddframe.job.lite.internal.schedule.JobShutdownHookPlugin;
-import com.dangdang.ddframe.job.lite.internal.schedule.LiteJob;
-import com.dangdang.ddframe.job.lite.internal.schedule.LiteJobFacade;
-import com.dangdang.ddframe.job.lite.internal.schedule.SchedulerFacade;
+import com.dangdang.ddframe.job.lite.internal.schedule.*;
 import com.dangdang.ddframe.job.reg.base.CoordinatorRegistryCenter;
 import com.google.common.base.Optional;
 import lombok.Getter;
@@ -80,12 +75,15 @@ public class JobScheduler {
     }
     
     private JobScheduler(final CoordinatorRegistryCenter regCenter, final LiteJobConfiguration liteJobConfig, final JobEventBus jobEventBus, final ElasticJobListener... elasticJobListeners) {
+        // 作业注册 添加JOB实例
         JobRegistry.getInstance().addJobInstance(liteJobConfig.getJobName(), new JobInstance());
         this.liteJobConfig = liteJobConfig;
         this.regCenter = regCenter;
         List<ElasticJobListener> elasticJobListenerList = Arrays.asList(elasticJobListeners);
         setGuaranteeServiceForElasticJobListeners(regCenter, elasticJobListenerList);
+        // 调度器
         schedulerFacade = new SchedulerFacade(regCenter, liteJobConfig.getJobName(), elasticJobListenerList);
+        // JOB执行门面
         jobFacade = new LiteJobFacade(regCenter, liteJobConfig.getJobName(), Arrays.asList(elasticJobListeners), jobEventBus);
     }
     
@@ -97,11 +95,12 @@ public class JobScheduler {
             }
         }
     }
-    
+
     /**
-     * 初始化作业.
+     * 入口方法：初始化作业.
      */
     public void init() {
+        // 更新作业配置信息
         LiteJobConfiguration liteJobConfigFromRegCenter = schedulerFacade.updateJobConfiguration(liteJobConfig);
         JobRegistry.getInstance().setCurrentShardingTotalCount(liteJobConfigFromRegCenter.getJobName(), liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getShardingTotalCount());
         JobScheduleController jobScheduleController = new JobScheduleController(
