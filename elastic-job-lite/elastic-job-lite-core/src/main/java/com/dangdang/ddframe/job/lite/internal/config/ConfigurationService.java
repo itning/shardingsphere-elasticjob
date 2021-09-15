@@ -67,7 +67,9 @@ public final class ConfigurationService {
      * @param liteJobConfig 作业配置
      */
     public void persist(final LiteJobConfiguration liteJobConfig) {
+        // 检查ZK上的作业名和配置的作业名是否有相同的，有的话检查配置的作业执行类是否相同，不相同就报错。
         checkConflictJob(liteJobConfig);
+        // 如果ZK上不存在相同的作业名或允许本地覆盖ZK的配置则用本地替换ZK上的作业配置信息
         if (!jobNodeStorage.isJobNodeExisted(ConfigurationNode.ROOT) || liteJobConfig.isOverwrite()) {
             jobNodeStorage.replaceJobNode(ConfigurationNode.ROOT, LiteJobConfigurationGsonFactory.toJson(liteJobConfig));
         }

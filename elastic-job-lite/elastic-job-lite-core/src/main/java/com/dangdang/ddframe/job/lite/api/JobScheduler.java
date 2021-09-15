@@ -102,10 +102,16 @@ public class JobScheduler {
      * 初始化作业.
      */
     public void init() {
+        // 获取生效的作业信息：1.检查作业 2.从ZK上获取作业信息并反序列化
         LiteJobConfiguration liteJobConfigFromRegCenter = schedulerFacade.updateJobConfiguration(liteJobConfig);
+        // 设置该JOB的分片数量
         JobRegistry.getInstance().setCurrentShardingTotalCount(liteJobConfigFromRegCenter.getJobName(), liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getShardingTotalCount());
-        JobScheduleController jobScheduleController = new JobScheduleController(
-                createScheduler(), createJobDetail(liteJobConfigFromRegCenter.getTypeConfig().getJobClass()), liteJobConfigFromRegCenter.getJobName());
+
+        JobScheduleController jobScheduleController =
+                // 创建作业调度控制器
+                // createScheduler创建调度器
+                // createJobDetail创建作业信息
+                new JobScheduleController(createScheduler(), createJobDetail(liteJobConfigFromRegCenter.getTypeConfig().getJobClass()), liteJobConfigFromRegCenter.getJobName());
         JobRegistry.getInstance().registerJob(liteJobConfigFromRegCenter.getJobName(), jobScheduleController, regCenter);
         schedulerFacade.registerStartUpInfo(!liteJobConfigFromRegCenter.isDisabled());
         jobScheduleController.scheduleJob(liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getCron());
@@ -137,6 +143,7 @@ public class JobScheduler {
             StdSchedulerFactory factory = new StdSchedulerFactory();
             factory.initialize(getBaseQuartzProperties());
             result = factory.getScheduler();
+            // TODO ITNING: 2021/9/15 用途？
             result.getListenerManager().addTriggerListener(schedulerFacade.newJobTriggerListener());
         } catch (final SchedulerException ex) {
             throw new JobSystemException(ex);
