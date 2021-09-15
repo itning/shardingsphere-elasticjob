@@ -41,6 +41,7 @@ public final class ConfigurationNode {
      * @return 是否为作业配置根路径
      */
     public boolean isConfigPath(final String path) {
+        // ${JOB_NAME}/config
         return jobNodePath.getConfigNodePath().equals(path);
     }
 }

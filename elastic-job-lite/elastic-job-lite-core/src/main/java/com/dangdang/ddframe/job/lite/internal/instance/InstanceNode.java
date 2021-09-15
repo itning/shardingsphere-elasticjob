@@ -59,6 +59,7 @@ public final class InstanceNode {
      * @return 是否为作业运行实例路径
      */
     public boolean isInstancePath(final String path) {
+        // ${JOB_NAME}/instances
         return path.startsWith(jobNodePath.getFullPath(InstanceNode.ROOT));
     }
     
