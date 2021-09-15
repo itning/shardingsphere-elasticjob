@@ -26,28 +26,29 @@ import java.lang.management.ManagementFactory;
 
 /**
  * 作业运行实例.
- * 
+ *
  * @author zhangliang
  */
 @RequiredArgsConstructor
 @Getter
 @EqualsAndHashCode(of = "jobInstanceId")
 public final class JobInstance {
-    
+
     private static final String DELIMITER = "@-@";
-    
+
     /**
      * 作业实例主键.
      */
     private final String jobInstanceId;
-    
+
     public JobInstance() {
-        jobInstanceId = IpUtils.getIp() + DELIMITER + ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
+        String getenv = System.getenv("set-id");
+        jobInstanceId = IpUtils.getIp() + DELIMITER + getenv;//ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
     }
-    
+
     /**
      * 获取作业服务器IP地址.
-     * 
+     *
      * @return 作业服务器IP地址
      */
     public String getIp() {

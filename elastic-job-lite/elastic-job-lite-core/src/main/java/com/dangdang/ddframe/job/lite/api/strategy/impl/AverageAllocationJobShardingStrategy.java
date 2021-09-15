@@ -20,37 +20,41 @@ package com.dangdang.ddframe.job.lite.api.strategy.impl;
 import com.dangdang.ddframe.job.lite.api.strategy.JobInstance;
 import com.dangdang.ddframe.job.lite.api.strategy.JobShardingStrategy;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 基于平均分配算法的分片策略.
- * 
+ *
  * <p>
  * 如果分片不能整除, 则不能整除的多余分片将依次追加到序号小的服务器.
- * 如: 
+ * 如:
  * 1. 如果有3台服务器, 分成9片, 则每台服务器分到的分片是: 1=[0,1,2], 2=[3,4,5], 3=[6,7,8].
  * 2. 如果有3台服务器, 分成8片, 则每台服务器分到的分片是: 1=[0,1,6], 2=[2,3,7], 3=[4,5].
  * 3. 如果有3台服务器, 分成10片, 则每台服务器分到的分片是: 1=[0,1,2,9], 2=[3,4,5], 3=[6,7,8].
  * </p>
- * 
+ *
  * @author zhangliang
  */
 public final class AverageAllocationJobShardingStrategy implements JobShardingStrategy {
-    
+
     @Override
     public Map<JobInstance, List<Integer>> sharding(final List<JobInstance> jobInstances, final String jobName, final int shardingTotalCount) {
         if (jobInstances.isEmpty()) {
             return Collections.emptyMap();
         }
+        System.out.println("重新分片：");
+        for (JobInstance jobInstance : jobInstances) {
+            System.out.println(jobInstance.getJobInstanceId());
+        }
         Map<JobInstance, List<Integer>> result = shardingAliquot(jobInstances, shardingTotalCount);
         addAliquant(jobInstances, shardingTotalCount, result);
+        System.out.println("分片结果：");
+        for (Map.Entry<JobInstance, List<Integer>> entry : result.entrySet()) {
+            System.out.println(entry.getKey().getJobInstanceId() + "  " + entry.getValue());
+        }
         return result;
     }
-    
+
     private Map<JobInstance, List<Integer>> shardingAliquot(final List<JobInstance> shardingUnits, final int shardingTotalCount) {
         Map<JobInstance, List<Integer>> result = new LinkedHashMap<>(shardingTotalCount, 1);
         int itemCountPerSharding = shardingTotalCount / shardingUnits.size();
@@ -65,7 +69,7 @@ public final class AverageAllocationJobShardingStrategy implements JobShardingSt
         }
         return result;
     }
-    
+
     private void addAliquant(final List<JobInstance> shardingUnits, final int shardingTotalCount, final Map<JobInstance, List<Integer>> shardingResults) {
         int aliquant = shardingTotalCount % shardingUnits.size();
         int count = 0;
