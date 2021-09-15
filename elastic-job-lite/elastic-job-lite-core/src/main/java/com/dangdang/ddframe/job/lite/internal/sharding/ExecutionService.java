@@ -59,6 +59,7 @@ public final class ExecutionService {
             return;
         }
         for (int each : shardingContexts.getShardingItemParameters().keySet()) {
+            // ${JOB_NAME}/sharding/${id}/running
             jobNodeStorage.fillEphemeralJobNode(ShardingNode.getRunningNode(each), "");
         }
     }
@@ -109,6 +110,7 @@ public final class ExecutionService {
             return false;
         }
         for (int each : items) {
+            // ${JOB_NAME}/sharding/${id}/running
             if (jobNodeStorage.isJobNodeExisted(ShardingNode.getRunningNode(each))) {
                 return true;
             }
@@ -126,6 +128,7 @@ public final class ExecutionService {
     }
     
     private List<Integer> getAllItems() {
+        // 获取作业的所有分片信息
         int shardingTotalCount = configService.load(true).getTypeConfig().getCoreConfig().getShardingTotalCount();
         List<Integer> result = new ArrayList<>(shardingTotalCount);
         for (int i = 0; i < shardingTotalCount; i++) {

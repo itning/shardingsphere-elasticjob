@@ -73,10 +73,12 @@ public final class ShardingNode {
     }
     
     static String getMisfireNode(final int item) {
+        // sharding/${id}/misfire
         return String.format(MISFIRE, item);
     }
     
     static String getDisabledNode(final int item) {
+        // sharding/${id}/disabled
         return String.format(DISABLED, item);
     }
     

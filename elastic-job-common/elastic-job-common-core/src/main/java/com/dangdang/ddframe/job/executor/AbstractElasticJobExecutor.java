@@ -45,21 +45,21 @@ import java.util.concurrent.ExecutorService;
  */
 @Slf4j
 public abstract class AbstractElasticJobExecutor {
-    
+
     @Getter(AccessLevel.PROTECTED)
     private final JobFacade jobFacade;
-    
+
     @Getter(AccessLevel.PROTECTED)
     private final JobRootConfiguration jobRootConfig;
-    
+
     private final String jobName;
-    
+
     private final ExecutorService executorService;
-    
+
     private final JobExceptionHandler jobExceptionHandler;
-    
+
     private final Map<Integer, String> itemErrorMessages;
-    
+
     protected AbstractElasticJobExecutor(final JobFacade jobFacade) {
         this.jobFacade = jobFacade;
         jobRootConfig = jobFacade.loadJobRootConfiguration(true);
@@ -68,7 +68,7 @@ public abstract class AbstractElasticJobExecutor {
         jobExceptionHandler = (JobExceptionHandler) getHandler(JobProperties.JobPropertiesEnum.JOB_EXCEPTION_HANDLER);
         itemErrorMessages = new ConcurrentHashMap<>(jobRootConfig.getTypeConfig().getCoreConfig().getShardingTotalCount(), 1);
     }
-    
+
     private Object getHandler(final JobProperties.JobPropertiesEnum jobPropertiesEnum) {
         String handlerClassName = jobRootConfig.getTypeConfig().getCoreConfig().getJobProperties().get(jobPropertiesEnum);
         try {
@@ -81,7 +81,7 @@ public abstract class AbstractElasticJobExecutor {
             return getDefaultHandler(jobPropertiesEnum, handlerClassName);
         }
     }
-    
+
     private Object getDefaultHandler(final JobProperties.JobPropertiesEnum jobPropertiesEnum, final String handlerClassName) {
         log.warn("Cannot instantiation class '{}', use default '{}' class.", handlerClassName, jobPropertiesEnum.getKey());
         try {
@@ -90,40 +90,51 @@ public abstract class AbstractElasticJobExecutor {
             throw new JobSystemException(e);
         }
     }
-    
+
     /**
      * 执行作业.
      */
     public final void execute() {
         try {
+            // 检查作业执行环境
+            // Lite 检查本机与注册中心的时间误差秒数是否在允许范围.
             jobFacade.checkJobExecutionEnvironment();
         } catch (final JobExecutionEnvironmentException cause) {
+            // 如果不在允许的范围默认只是打Error日志 不终止JOB执行
             jobExceptionHandler.handleException(jobName, cause);
         }
+        // 获取分片上下文
         ShardingContexts shardingContexts = jobFacade.getShardingContexts();
         if (shardingContexts.isAllowSendJobEvent()) {
             jobFacade.postJobStatusTraceEvent(shardingContexts.getTaskId(), State.TASK_STAGING, String.format("Job '%s' execute begin.", jobName));
         }
+        // 如果当前JOB还在执行 设置错过执行的标记
         if (jobFacade.misfireIfRunning(shardingContexts.getShardingItemParameters().keySet())) {
             if (shardingContexts.isAllowSendJobEvent()) {
                 jobFacade.postJobStatusTraceEvent(shardingContexts.getTaskId(), State.TASK_FINISHED, String.format(
-                        "Previous job '%s' - shardingItems '%s' is still running, misfired job will start after previous job completed.", jobName, 
+                        "Previous job '%s' - shardingItems '%s' is still running, misfired job will start after previous job completed.", jobName,
                         shardingContexts.getShardingItemParameters().keySet()));
             }
             return;
         }
         try {
+            // 作业执行前执行
             jobFacade.beforeJobExecuted(shardingContexts);
             //CHECKSTYLE:OFF
         } catch (final Throwable cause) {
             //CHECKSTYLE:ON
             jobExceptionHandler.handleException(jobName, cause);
         }
+        // 开始执行
         execute(shardingContexts, JobExecutionEvent.ExecutionSource.NORMAL_TRIGGER);
+        // 判断作业是否需要执行错过的任务
         while (jobFacade.isExecuteMisfired(shardingContexts.getShardingItemParameters().keySet())) {
+            // 清除错过执行标记
             jobFacade.clearMisfire(shardingContexts.getShardingItemParameters().keySet());
             execute(shardingContexts, JobExecutionEvent.ExecutionSource.MISFIRE);
         }
+        // 如果需要失效转移, 则执行作业失效转移
+        // 把别人失效的分片拿过来自己执行
         jobFacade.failoverIfNecessary();
         try {
             jobFacade.afterJobExecuted(shardingContexts);
@@ -133,8 +144,9 @@ public abstract class AbstractElasticJobExecutor {
             jobExceptionHandler.handleException(jobName, cause);
         }
     }
-    
+
     private void execute(final ShardingContexts shardingContexts, final JobExecutionEvent.ExecutionSource executionSource) {
+        // 如果获得的分片数为空则返回
         if (shardingContexts.getShardingItemParameters().isEmpty()) {
             if (shardingContexts.isAllowSendJobEvent()) {
                 jobFacade.postJobStatusTraceEvent(shardingContexts.getTaskId(), State.TASK_FINISHED, String.format("Sharding item for job '%s' is empty.", jobName));
@@ -162,12 +174,13 @@ public abstract class AbstractElasticJobExecutor {
             }
         }
     }
-    
+
     private void process(final ShardingContexts shardingContexts, final JobExecutionEvent.ExecutionSource executionSource) {
         Collection<Integer> items = shardingContexts.getShardingItemParameters().keySet();
+        // 如果只有一个分片直接执行
         if (1 == items.size()) {
             int item = shardingContexts.getShardingItemParameters().keySet().iterator().next();
-            JobExecutionEvent jobExecutionEvent =  new JobExecutionEvent(shardingContexts.getTaskId(), jobName, executionSource, item);
+            JobExecutionEvent jobExecutionEvent = new JobExecutionEvent(shardingContexts.getTaskId(), jobName, executionSource, item);
             process(shardingContexts, item, jobExecutionEvent);
             return;
         }
@@ -177,8 +190,9 @@ public abstract class AbstractElasticJobExecutor {
             if (executorService.isShutdown()) {
                 return;
             }
+            // 多个分片放在线程池中执行
             executorService.submit(new Runnable() {
-                
+
                 @Override
                 public void run() {
                     try {
@@ -195,7 +209,7 @@ public abstract class AbstractElasticJobExecutor {
             Thread.currentThread().interrupt();
         }
     }
-    
+
     private void process(final ShardingContexts shardingContexts, final int item, final JobExecutionEvent startEvent) {
         if (shardingContexts.isAllowSendJobEvent()) {
             jobFacade.postJobExecutionEvent(startEvent);
@@ -218,6 +232,6 @@ public abstract class AbstractElasticJobExecutor {
             jobExceptionHandler.handleException(jobName, cause);
         }
     }
-    
+
     protected abstract void process(ShardingContext shardingContext);
 }

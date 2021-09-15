@@ -58,7 +58,9 @@ public abstract class AbstractDistributeOnceElasticJobListener implements Elasti
     
     @Override
     public final void beforeJobExecuted(final ShardingContexts shardingContexts) {
+        // 注册启动节点 ${JOB_NAME}/guarantee/started
         guaranteeService.registerStart(shardingContexts.getShardingItemParameters().keySet());
+        // 如果所有节点都启动完毕
         if (guaranteeService.isAllStarted()) {
             doBeforeJobExecutedAtLastStarted(shardingContexts);
             guaranteeService.clearAllStartedInfo();

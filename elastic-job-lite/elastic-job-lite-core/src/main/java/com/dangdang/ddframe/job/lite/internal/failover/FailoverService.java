@@ -163,11 +163,12 @@ public final class FailoverService {
             if (JobRegistry.getInstance().isShutdown(jobName) || !needFailover()) {
                 return;
             }
+            // ${JOB_NAME}/leader/failover/items
             int crashedItem = Integer.parseInt(jobNodeStorage.getJobNodeChildrenKeys(FailoverNode.ITEMS_ROOT).get(0));
             log.debug("Failover job '{}' begin, crashed item '{}'", jobName, crashedItem);
-            // ${JOB_NAME}/sharding/${id}/failover 值为JobInstanceId
+            // 填充 ${JOB_NAME}/sharding/${id}/failover 值为JobInstanceId
             jobNodeStorage.fillEphemeralJobNode(FailoverNode.getExecutionFailoverNode(crashedItem), JobRegistry.getInstance().getJobInstance(jobName).getJobInstanceId());
-            // ${JOB_NAME}/leader/failover/items/${id}
+            // 移除 ${JOB_NAME}/leader/failover/items/${id}
             jobNodeStorage.removeJobNodeIfExisted(FailoverNode.getItemsNode(crashedItem));
             // TODO 不应使用triggerJob, 而是使用executor统一调度
             JobScheduleController jobScheduleController = JobRegistry.getInstance().getJobScheduleController(jobName);

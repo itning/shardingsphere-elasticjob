@@ -73,6 +73,7 @@ public final class InstanceService {
      */
     public List<JobInstance> getAvailableJobInstances() {
         List<JobInstance> result = new LinkedList<>();
+        // ${JOB_NAME}/instances
         for (String each : jobNodeStorage.getJobNodeChildrenKeys(InstanceNode.ROOT)) {
             JobInstance jobInstance = new JobInstance(each);
             if (serverService.isEnableServer(jobInstance.getIp())) {
