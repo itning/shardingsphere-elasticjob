@@ -64,6 +64,7 @@ public final class InstanceNode {
     }
     
     boolean isLocalInstancePath(final String path) {
+        // instances/JobInstanceId
         return path.equals(jobNodePath.getFullPath(String.format(INSTANCES, JobRegistry.getInstance().getJobInstance(jobName).getJobInstanceId())));
     }
     

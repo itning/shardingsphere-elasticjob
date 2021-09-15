@@ -92,6 +92,7 @@ public final class ExecutionService {
      */
     public void clearRunningInfo(final List<Integer> items) {
         for (int each : items) {
+            // ${JOB_NAME}/sharding/${id}/running
             jobNodeStorage.removeJobNodeIfExisted(ShardingNode.getRunningNode(each));
         }
     }

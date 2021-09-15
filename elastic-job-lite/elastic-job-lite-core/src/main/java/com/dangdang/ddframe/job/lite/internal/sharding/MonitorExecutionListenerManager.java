@@ -50,7 +50,9 @@ public final class MonitorExecutionListenerManager extends AbstractListenerManag
         
         @Override
         protected void dataChanged(final String path, final Type eventType, final String data) {
+            // 未开启监控作业执行时状态
             if (configNode.isConfigPath(path) && Type.NODE_UPDATED == eventType && !LiteJobConfigurationGsonFactory.fromJson(data).isMonitorExecution()) {
+                // 配置节点更新了 清除全部分片的运行状态
                 executionService.clearAllRunningInfo();
             }
         }

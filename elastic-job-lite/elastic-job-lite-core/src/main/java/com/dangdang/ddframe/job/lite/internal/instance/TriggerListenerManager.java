@@ -52,9 +52,11 @@ public final class TriggerListenerManager extends AbstractListenerManager {
         
         @Override
         protected void dataChanged(final String path, final Type eventType, final String data) {
+            // 节点内容不是TRIGGER 或者 变更的节点不是实例节点 或者 变更类型不是更新
             if (!InstanceOperation.TRIGGER.name().equals(data) || !instanceNode.isLocalInstancePath(path) || Type.NODE_UPDATED != eventType) {
                 return;
             }
+            // 清理作业触发标记
             instanceService.clearTriggerFlag();
             if (!JobRegistry.getInstance().isShutdown(jobName) && !JobRegistry.getInstance().isJobRunning(jobName)) {
                 // TODO 目前是作业运行时不能触发, 未来改为堆积式触发

@@ -57,12 +57,15 @@ public final class FailoverService {
      * @param item 崩溃的作业项
      */
     public void setCrashedFailoverFlag(final int item) {
+        // 失效转移标记不存在
         if (!isFailoverAssigned(item)) {
+            // ${JOB_NAME}/leader/failover/items/${id}
             jobNodeStorage.createJobNodeIfNeeded(FailoverNode.getItemsNode(item));
         }
     }
     
     private boolean isFailoverAssigned(final Integer item) {
+        // ${JOB_NAME}/sharding/${id}/failover
         return jobNodeStorage.isJobNodeExisted(FailoverNode.getExecutionFailoverNode(item));
     }
     
@@ -76,6 +79,7 @@ public final class FailoverService {
     }
     
     private boolean needFailover() {
+        // ${JOB_NAME}/leader/failover/items && 子节点不为空 && JOB在运行中
         return jobNodeStorage.isJobNodeExisted(FailoverNode.ITEMS_ROOT) && !jobNodeStorage.getJobNodeChildrenKeys(FailoverNode.ITEMS_ROOT).isEmpty()
                 && !JobRegistry.getInstance().isJobRunning(jobName);
     }
@@ -98,11 +102,14 @@ public final class FailoverService {
      * @return 作业失效转移的分片项集合
      */
     public List<Integer> getFailoverItems(final String jobInstanceId) {
+        // ${JOB_NAME}/sharding
         List<String> items = jobNodeStorage.getJobNodeChildrenKeys(ShardingNode.ROOT);
         List<Integer> result = new ArrayList<>(items.size());
         for (String each : items) {
             int item = Integer.parseInt(each);
+            // sharding/${id}/failover
             String node = FailoverNode.getExecutionFailoverNode(item);
+            // ${JOB_NAME}/sharding/${id}/failover && 作业运行实例主键是该节点
             if (jobNodeStorage.isJobNodeExisted(node) && jobInstanceId.equals(jobNodeStorage.getJobNodeDataDirectly(node))) {
                 result.add(item);
             }
@@ -152,12 +159,15 @@ public final class FailoverService {
         
         @Override
         public void execute() {
+            // 获得锁后二次判断
             if (JobRegistry.getInstance().isShutdown(jobName) || !needFailover()) {
                 return;
             }
             int crashedItem = Integer.parseInt(jobNodeStorage.getJobNodeChildrenKeys(FailoverNode.ITEMS_ROOT).get(0));
             log.debug("Failover job '{}' begin, crashed item '{}'", jobName, crashedItem);
+            // ${JOB_NAME}/sharding/${id}/failover 值为JobInstanceId
             jobNodeStorage.fillEphemeralJobNode(FailoverNode.getExecutionFailoverNode(crashedItem), JobRegistry.getInstance().getJobInstance(jobName).getJobInstanceId());
+            // ${JOB_NAME}/leader/failover/items/${id}
             jobNodeStorage.removeJobNodeIfExisted(FailoverNode.getItemsNode(crashedItem));
             // TODO 不应使用triggerJob, 而是使用executor统一调度
             JobScheduleController jobScheduleController = JobRegistry.getInstance().getJobScheduleController(jobName);

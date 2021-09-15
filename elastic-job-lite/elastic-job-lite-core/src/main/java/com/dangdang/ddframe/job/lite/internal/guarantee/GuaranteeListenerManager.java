@@ -53,6 +53,7 @@ public final class GuaranteeListenerManager extends AbstractListenerManager {
         
         @Override
         protected void dataChanged(final String path, final Type eventType, final String data) {
+            // ${JOB_NAME}/guarantee/started
             if (Type.NODE_REMOVED == eventType && guaranteeNode.isStartedRootNode(path)) {
                 for (ElasticJobListener each : elasticJobListeners) {
                     if (each instanceof AbstractDistributeOnceElasticJobListener) {
@@ -67,6 +68,7 @@ public final class GuaranteeListenerManager extends AbstractListenerManager {
         
         @Override
         protected void dataChanged(final String path, final Type eventType, final String data) {
+            // ${JOB_NAME}/guarantee/completed
             if (Type.NODE_REMOVED == eventType && guaranteeNode.isCompletedRootNode(path)) {
                 for (ElasticJobListener each : elasticJobListeners) {
                     if (each instanceof AbstractDistributeOnceElasticJobListener) {

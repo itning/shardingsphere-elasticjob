@@ -57,6 +57,7 @@ public final class ShardingNode {
     }
     
     public static String getInstanceNode(final int item) {
+        // sharding/${id}/instance
         return String.format(INSTANCE, item);
     }
     
@@ -67,6 +68,7 @@ public final class ShardingNode {
      * @return 作业运行状态节点路径
      */
     public static String getRunningNode(final int item) {
+        // sharding/${id}/running
         return String.format(RUNNING, item);
     }
     

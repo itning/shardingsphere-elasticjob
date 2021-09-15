@@ -48,10 +48,12 @@ public final class GuaranteeNode {
     }
     
     boolean isStartedRootNode(final String path) {
+        // ${JOB_NAME}/guarantee/started
         return jobNodePath.getFullPath(STARTED_ROOT).equals(path);
     }
     
     boolean isCompletedRootNode(final String path) {
+        // ${JOB_NAME}/guarantee/completed
         return jobNodePath.getFullPath(COMPLETED_ROOT).equals(path);
     }
 }

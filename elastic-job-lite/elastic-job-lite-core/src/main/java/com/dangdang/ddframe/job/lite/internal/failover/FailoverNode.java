@@ -47,10 +47,12 @@ public final class FailoverNode {
     }
     
     static String getItemsNode(final int item) {
+        // leader/failover/items/${id}
         return String.format(ITEMS, item);
     }
     
     static String getExecutionFailoverNode(final int item) {
+        // sharding/${id}/failover
         return String.format(EXECUTION_FAILOVER, item);
     }
     
