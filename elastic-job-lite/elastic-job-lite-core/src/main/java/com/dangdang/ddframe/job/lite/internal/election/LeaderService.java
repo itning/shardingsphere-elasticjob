@@ -28,24 +28,24 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * 主节点服务.
- * 
+ *
  * @author zhangliang
  */
 @Slf4j
 public final class LeaderService {
-    
+
     private final String jobName;
-    
+
     private final ServerService serverService;
-    
+
     private final JobNodeStorage jobNodeStorage;
-    
+
     public LeaderService(final CoordinatorRegistryCenter regCenter, final String jobName) {
         this.jobName = jobName;
         jobNodeStorage = new JobNodeStorage(regCenter, jobName);
         serverService = new ServerService(regCenter, jobName);
     }
-    
+
     /**
      * 选举主节点.
      */
@@ -54,14 +54,14 @@ public final class LeaderService {
         jobNodeStorage.executeInLeader(LeaderNode.LATCH, new LeaderElectionExecutionCallback());
         log.debug("Leader election completed.");
     }
-    
+
     /**
      * 判断当前节点是否是主节点.
-     * 
+     *
      * <p>
      * 如果主节点正在选举中而导致取不到主节点, 则阻塞至主节点选举完成再返回.
      * </p>
-     * 
+     *
      * @return 当前节点是否是主节点
      */
     public boolean isLeaderUntilBlock() {
@@ -74,7 +74,7 @@ public final class LeaderService {
         }
         return isLeader();
     }
-    
+
     /**
      * 判断当前节点是否是主节点.
      *
@@ -83,29 +83,34 @@ public final class LeaderService {
     public boolean isLeader() {
         return !JobRegistry.getInstance().isShutdown(jobName) && JobRegistry.getInstance().getJobInstance(jobName).getJobInstanceId().equals(jobNodeStorage.getJobNodeData(LeaderNode.INSTANCE));
     }
-    
+
     /**
      * 判断是否已经有主节点.
-     * 
+     *
      * @return 是否已经有主节点
      */
     public boolean hasLeader() {
         return jobNodeStorage.isJobNodeExisted(LeaderNode.INSTANCE);
     }
-    
+
     /**
      * 删除主节点供重新选举.
      */
     public void removeLeader() {
         jobNodeStorage.removeJobNodeIfExisted(LeaderNode.INSTANCE);
     }
-    
+
+    /**
+     * 主节点选举回调
+     */
     @RequiredArgsConstructor
     class LeaderElectionExecutionCallback implements LeaderExecutionCallback {
-        
+
         @Override
         public void execute() {
+            // 如果主节点不存在则当前节点变更为主节点
             if (!hasLeader()) {
+                // ${JOB_NAME}/leader/election/instance 值为JobInstanceId
                 jobNodeStorage.fillEphemeralJobNode(LeaderNode.INSTANCE, JobRegistry.getInstance().getJobInstance(jobName).getJobInstanceId());
             }
         }

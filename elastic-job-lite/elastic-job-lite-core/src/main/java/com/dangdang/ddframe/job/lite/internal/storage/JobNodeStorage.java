@@ -184,8 +184,10 @@ public final class JobNodeStorage {
      * @param callback 执行操作的回调
      */
     public void executeInLeader(final String latchNode, final LeaderExecutionCallback callback) {
+        // 注意 try-with-resource
         try (LeaderLatch latch = new LeaderLatch(getClient(), jobNodePath.getFullPath(latchNode))) {
             latch.start();
+            // 如果不是leader方法会阻塞，直到自己成为leader才会返回
             latch.await();
             callback.execute();
         //CHECKSTYLE:OFF
