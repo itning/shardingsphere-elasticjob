@@ -25,24 +25,29 @@ import org.quartz.listeners.TriggerListenerSupport;
 
 /**
  * 作业触发监听器.
- * 
+ *
  * @author zhangliang
  */
 @RequiredArgsConstructor
 public final class JobTriggerListener extends TriggerListenerSupport {
-    
+
     private final ExecutionService executionService;
-    
+
     private final ShardingService shardingService;
-    
+
     @Override
     public String getName() {
         return "JobTriggerListener";
     }
-    
+
+    /**
+     * 当Trigger错过被激发时执行,比如当前时间有很多触发器都需要执行，但是线程池中的有效线程都在工作，
+     * 那么有的触发器就有可能超时，错过这一轮的触发。
+     */
     @Override
     public void triggerMisfired(final Trigger trigger) {
         if (null != trigger.getPreviousFireTime()) {
+            // 设置被错过执行的标记
             executionService.setMisfire(shardingService.getLocalShardingItems());
         }
     }

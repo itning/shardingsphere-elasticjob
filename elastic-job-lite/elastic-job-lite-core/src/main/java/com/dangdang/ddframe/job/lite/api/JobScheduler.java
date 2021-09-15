@@ -106,20 +106,32 @@ public class JobScheduler {
         LiteJobConfiguration liteJobConfigFromRegCenter = schedulerFacade.updateJobConfiguration(liteJobConfig);
         // 设置该JOB的分片数量
         JobRegistry.getInstance().setCurrentShardingTotalCount(liteJobConfigFromRegCenter.getJobName(), liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getShardingTotalCount());
-
-        JobScheduleController jobScheduleController =
-                // 创建作业调度控制器
+        // 创建作业调度控制器
+        JobScheduleController jobScheduleController = new JobScheduleController(
                 // createScheduler创建调度器
+                createScheduler(),
                 // createJobDetail创建作业信息
-                new JobScheduleController(createScheduler(), createJobDetail(liteJobConfigFromRegCenter.getTypeConfig().getJobClass()), liteJobConfigFromRegCenter.getJobName());
+                createJobDetail(liteJobConfigFromRegCenter.getTypeConfig().getJobClass()),
+                liteJobConfigFromRegCenter.getJobName()
+        );
+        // 注册作业，添加作业调度控制器
         JobRegistry.getInstance().registerJob(liteJobConfigFromRegCenter.getJobName(), jobScheduleController, regCenter);
+        // 注册作业启动信息
         schedulerFacade.registerStartUpInfo(!liteJobConfigFromRegCenter.isDisabled());
+        // 调度作业 作业开始
         jobScheduleController.scheduleJob(liteJobConfigFromRegCenter.getTypeConfig().getCoreConfig().getCron());
     }
 
+    /**
+     * 创建作业信息
+     */
     private JobDetail createJobDetail(final String jobClass) {
-        JobDetail result = JobBuilder.newJob(LiteJob.class).withIdentity(liteJobConfig.getJobName()).build();
+        JobDetail result = JobBuilder
+                .newJob(LiteJob.class)
+                .withIdentity(liteJobConfig.getJobName())
+                .build();
         result.getJobDataMap().put(JOB_FACADE_DATA_MAP_KEY, jobFacade);
+        // 从Spring进来的已经创建了
         Optional<ElasticJob> elasticJobInstance = createElasticJobInstance();
         if (elasticJobInstance.isPresent()) {
             result.getJobDataMap().put(ELASTIC_JOB_DATA_MAP_KEY, elasticJobInstance.get());
@@ -143,7 +155,7 @@ public class JobScheduler {
             StdSchedulerFactory factory = new StdSchedulerFactory();
             factory.initialize(getBaseQuartzProperties());
             result = factory.getScheduler();
-            // TODO ITNING: 2021/9/15 用途？
+            // 作业触发监听器 目前是对错过执行的JOB进行监听
             result.getListenerManager().addTriggerListener(schedulerFacade.newJobTriggerListener());
         } catch (final SchedulerException ex) {
             throw new JobSystemException(ex);
