@@ -63,6 +63,7 @@ public final class ServerNode {
      * @return 是否为本地作业服务器路径
      */
     public boolean isLocalServerPath(final String path) {
+        // ${JOB_NAME}/servers/${IP}
         return path.equals(jobNodePath.getFullPath(String.format(SERVERS, JobRegistry.getInstance().getJobInstance(jobName).getIp())));
     }
     

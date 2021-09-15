@@ -44,6 +44,7 @@ public final class LeaderNode {
     }
     
     boolean isLeaderInstancePath(final String path) {
+        // ${JOB_NAME}/leader/election/instance
         return jobNodePath.getFullPath(INSTANCE).equals(path);
     }
 }
