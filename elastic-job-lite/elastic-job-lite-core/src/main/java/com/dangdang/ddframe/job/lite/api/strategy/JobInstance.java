@@ -43,6 +43,7 @@ public final class JobInstance {
 
     public JobInstance() {
         String getenv = System.getenv("set-id");
+        // TODO ITNING: 2021/9/15 重写了
         jobInstanceId = IpUtils.getIp() + DELIMITER + getenv;//ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
     }
 

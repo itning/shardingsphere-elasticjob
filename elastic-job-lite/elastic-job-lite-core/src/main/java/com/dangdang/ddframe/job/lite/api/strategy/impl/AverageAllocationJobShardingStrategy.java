@@ -42,6 +42,7 @@ public final class AverageAllocationJobShardingStrategy implements JobShardingSt
         if (jobInstances.isEmpty()) {
             return Collections.emptyMap();
         }
+        // TODO ITNING: 2021/9/15 重写了
         System.out.println("重新分片：");
         for (JobInstance jobInstance : jobInstances) {
             System.out.println(jobInstance.getJobInstanceId());
