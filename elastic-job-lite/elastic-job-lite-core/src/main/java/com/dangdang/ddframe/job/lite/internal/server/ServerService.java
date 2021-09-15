@@ -26,38 +26,41 @@ import java.util.List;
 
 /**
  * 作业服务器服务.
- * 
+ *
  * @author zhangliang
  * @author caohao
  */
 public final class ServerService {
-    
+
     private final String jobName;
-    
+
     private final JobNodeStorage jobNodeStorage;
-    
+
     private final ServerNode serverNode;
-    
+
     public ServerService(final CoordinatorRegistryCenter regCenter, final String jobName) {
         this.jobName = jobName;
         jobNodeStorage = new JobNodeStorage(regCenter, jobName);
         serverNode = new ServerNode(jobName);
     }
-    
+
     /**
      * 持久化作业服务器上线信息.
-     * 
+     *
      * @param enabled 作业是否启用
      */
     public void persistOnline(final boolean enabled) {
+        // 任务没停
         if (!JobRegistry.getInstance().isShutdown(jobName)) {
+            // TODO ITNING: 2021/9/15 什么时候会删除？
+            // 持久化节点 ${JOB_NAME}/servers/${IP} 值为空字符串或DISABLED
             jobNodeStorage.fillJobNode(serverNode.getServerNode(JobRegistry.getInstance().getJobInstance(jobName).getIp()), enabled ? "" : ServerStatus.DISABLED.name());
         }
     }
-    
+
     /**
      * 获取是否还有可用的作业服务器.
-     * 
+     *
      * @return 是否还有可用的作业服务器
      */
     public boolean hasAvailableServers() {
@@ -69,17 +72,17 @@ public final class ServerService {
         }
         return false;
     }
-    
+
     /**
      * 判断作业服务器是否可用.
-     * 
+     *
      * @param ip 作业服务器IP地址
      * @return 作业服务器是否可用
      */
     public boolean isAvailableServer(final String ip) {
         return isEnableServer(ip) && hasOnlineInstances(ip);
     }
-    
+
     private boolean hasOnlineInstances(final String ip) {
         for (String each : jobNodeStorage.getJobNodeChildrenKeys(InstanceNode.ROOT)) {
             if (each.startsWith(ip)) {
@@ -88,7 +91,7 @@ public final class ServerService {
         }
         return false;
     }
-    
+
     /**
      * 判断服务器是否启用.
      *

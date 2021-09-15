@@ -27,44 +27,45 @@ import java.util.List;
 
 /**
  * 作业运行实例服务.
- * 
+ *
  * @author zhangliang
  */
 public final class InstanceService {
-    
+
     private final JobNodeStorage jobNodeStorage;
-    
+
     private final InstanceNode instanceNode;
-    
+
     private final ServerService serverService;
-    
+
     public InstanceService(final CoordinatorRegistryCenter regCenter, final String jobName) {
         jobNodeStorage = new JobNodeStorage(regCenter, jobName);
         instanceNode = new InstanceNode(jobName);
         serverService = new ServerService(regCenter, jobName);
     }
-    
+
     /**
      * 持久化作业运行实例上线相关信息.
      */
     public void persistOnline() {
+        // 临时节点 ${JOB_NAME}/instances/${jobInstanceId}
         jobNodeStorage.fillEphemeralJobNode(instanceNode.getLocalInstanceNode(), "");
     }
-    
+
     /**
      * 删除作业运行状态.
      */
     public void removeInstance() {
         jobNodeStorage.removeJobNodeIfExisted(instanceNode.getLocalInstanceNode());
     }
-    
+
     /**
      * 清理作业触发标记.
      */
     public void clearTriggerFlag() {
         jobNodeStorage.updateJobNode(instanceNode.getLocalInstanceNode(), "");
     }
-    
+
     /**
      * 获取可分片的作业运行实例.
      *
@@ -80,10 +81,10 @@ public final class InstanceService {
         }
         return result;
     }
-    
+
     /**
      * 判断当前作业运行实例的节点是否仍然存在.
-     * 
+     *
      * @return 当前作业运行实例的节点是否仍然存在
      */
     public boolean isLocalJobInstanceExisted() {

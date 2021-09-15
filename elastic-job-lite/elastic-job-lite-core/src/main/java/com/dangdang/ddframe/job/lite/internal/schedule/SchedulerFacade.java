@@ -122,7 +122,7 @@ public final class SchedulerFacade {
         shardingService.setReshardingFlag();
         // 作业监控服务 初始化作业监听服务
         monitorService.listen();
-        // 调解分布式作业不一致状态服务
+        // 调解分布式作业不一致状态服务 每隔一段时间监视作业服务器的状态，如果不正确则重新分片.
         if (!reconcileService.isRunning()) {
             reconcileService.startAsync();
         }

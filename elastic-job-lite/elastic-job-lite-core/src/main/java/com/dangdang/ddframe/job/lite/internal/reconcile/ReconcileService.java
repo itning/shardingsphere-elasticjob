@@ -34,35 +34,37 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public final class ReconcileService extends AbstractScheduledService {
-    
+
     private long lastReconcileTime;
-    
+
     private final ConfigurationService configService;
-    
+
     private final ShardingService shardingService;
-    
+
     private final LeaderService leaderService;
-    
+
     public ReconcileService(final CoordinatorRegistryCenter regCenter, final String jobName) {
         lastReconcileTime = System.currentTimeMillis();
         configService = new ConfigurationService(regCenter, jobName);
         shardingService = new ShardingService(regCenter, jobName);
         leaderService = new LeaderService(regCenter, jobName);
     }
-    
+
     @Override
     protected void runOneIteration() throws Exception {
+        // 每隔一段时间监视作业服务器的状态，如果不正确则重新分片.
         LiteJobConfiguration config = configService.load(true);
         int reconcileIntervalMinutes = null == config ? -1 : config.getReconcileIntervalMinutes();
         if (reconcileIntervalMinutes > 0 && (System.currentTimeMillis() - lastReconcileTime >= reconcileIntervalMinutes * 60 * 1000)) {
             lastReconcileTime = System.currentTimeMillis();
+            // 条件：主节点&&未设置分片标识&&有不在线的服务器
             if (leaderService.isLeaderUntilBlock() && !shardingService.isNeedSharding() && shardingService.hasShardingInfoInOfflineServers()) {
                 log.warn("Elastic Job: job status node has inconsistent value,start reconciling...");
                 shardingService.setReshardingFlag();
             }
         }
     }
-    
+
     @Override
     protected Scheduler scheduler() {
         return Scheduler.newFixedDelaySchedule(0, 1, TimeUnit.MINUTES);
